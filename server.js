@@ -13,6 +13,8 @@ app.use('/', createProxyMiddleware({
     proxyReq: (proxyReq) => {
       proxyReq.setHeader('Host', 'www.tiktok.com');
       proxyReq.setHeader('Origin', 'https://www.tiktok.com');
+      // Forzar respuesta sin compresión para manipular el texto sin errores
+      proxyReq.setHeader('Accept-Encoding', 'identity');
     },
     proxyRes: (proxyRes, req, res) => {
       let body = [];
@@ -21,11 +23,15 @@ app.use('/', createProxyMiddleware({
         let buffer = Buffer.concat(body);
         let responseStr = buffer.toString('utf8');
 
-        // Limpiar referencias estrictas de dominio para forzar rutas relativas
+        // Limpiar referencias estrictas de dominio
         responseStr = responseStr.replace(/https:\/\/([a-zA-Z0-9-]+\.)*tiktok\.com/g, '');
         responseStr = responseStr.replace(/https:\/\/([a-zA-Z0-9-]+\.)*tiktokcdn\.com/g, '');
 
-        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        const headers = { ...proxyRes.headers };
+        delete headers['content-encoding'];
+        delete headers['content-length'];
+
+        res.writeHead(proxyRes.statusCode, headers);
         res.end(responseStr);
       });
     }
@@ -33,5 +39,5 @@ app.use('/', createProxyMiddleware({
 }));
 
 app.listen(PORT, () => {
-  console.log(`Proxy avanzado activo en puerto ${PORT}`);
+  console.log(`Proxy optimizado activo en puerto ${PORT}`);
 });
